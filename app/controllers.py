@@ -41,12 +41,19 @@ class ReportController:
         self._users = []
 
     def create_report(self, digests):
+        media_pattern = r'.*<.+>.*'
         normal_pattern = r'([0-9]{2}\/[0-9]{2}/[0-9]{4}\ [0-9]+:[0-9]{2}.+)\ -\ (.*?):\ (.+)'
 
         for _digest in digests:
             filepath = Path(CONFIG.storage_path, _digest)
             with open(filepath, 'r', encoding='utf-8') as _file:
                 for _line in _file.readlines():
+                    # Check for medias, ignore if present
+                    match = re.match(media_pattern, _line)
+                    if match is not None:
+                        continue
+
+                    # Check for valid messages
                     match = re.match(normal_pattern, _line)
                     if match is None:
                         continue
