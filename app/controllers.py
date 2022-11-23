@@ -1,7 +1,10 @@
 import re
+import string
 from pathlib import Path
 from tinydb import TinyDB
 from collections import Counter
+from nltk.corpus import stopwords
+from nltk.stem.snowball import SnowballStemmer
 
 from app.config import CONFIG
 from app.exceptions import ItemNotFoundError
@@ -43,6 +46,7 @@ class ReportController:
     def create_report(self, digests):
         media_pattern = r'.*<.+>.*'
         normal_pattern = r'([0-9]{2}\/[0-9]{2}/[0-9]{4}\ [0-9]+:[0-9]{2}.+)\ -\ (.*?):\ (.+)'
+        _stopwords = [*stopwords.words('portuguese'), *string.punctuation]
 
         for _digest in digests:
             filepath = Path(CONFIG.storage_path, _digest)
@@ -65,9 +69,35 @@ class ReportController:
 
                     self._words.extend(message.split())
 
-        counter = Counter(self._words)
+        # Convert to lowercase
+        self._words = [w.lower() for w in self._words]
+
+        # Fix some slangs
+        for i, word in enumerate(self._words):
+            if word == 'n':
+                self._words[i] = 'não'
+
+            if word == 'q':
+                self._words[i] = 'que'
+
+            if word == 'pq':
+                self._words[i] = 'por'
+                self._words[i + 1] = 'que'
+
+            if word == 'pra':
+                self._words[i] = 'para'
+
+        # Remove stopwords
+        valid_words = []
+        for word in self._words:
+            if word not in _stopwords:
+                valid_words.append(word)
+
+        # Do some counting
+        counter = Counter(valid_words)
+        top_words = [{'word': x[0], 'count': x[1]} for x in counter.most_common(10)]
 
         return {
             'users': self._users,
-            'top_words': counter.most_common(10)
+            'top_words': top_words
         }

@@ -8,7 +8,7 @@ from app.controllers import ItemController, StorageController, ReportController
 from app.exceptions import ItemNotFoundError
 from app.models import Item
 
-files_router = APIRouter(prefix='/files')
+files_router = APIRouter(prefix='/report')
 
 
 @files_router.post('/', status_code=status.HTTP_200_OK)
